@@ -11,7 +11,7 @@ namespace XRTK.Utilities.Gltf
         public GameObject Model
         {
             get => model;
-            internal set => model = value;
+            set => model = value;
         }
 
         [SerializeField]
@@ -20,7 +20,7 @@ namespace XRTK.Utilities.Gltf
         public GltfObject GltfObject
         {
             get => gltfObject;
-            internal set => gltfObject = value;
+            set => gltfObject = value;
         }
     }
 }

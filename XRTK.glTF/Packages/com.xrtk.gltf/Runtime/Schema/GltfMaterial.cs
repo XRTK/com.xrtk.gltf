@@ -83,6 +83,6 @@ namespace XRTK.Utilities.Gltf.Schema
         /// </summary>
         public bool doubleSided;
 
-        public Material Material { get; internal set; }
+        public Material Material { get; set; }
     }
 }
