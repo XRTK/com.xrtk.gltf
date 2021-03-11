@@ -1,7 +1,7 @@
 {
-  "name": "com.xrtk.projectname",
-  "displayName": "XRTK.ProjectName",
-  "description": "The ProjectName components for the Mixed Reality Toolkit.",
+  "name": "com.xrtk.gltf",
+  "displayName": "XRTK.glTF",
+  "description": "The glTF components for the Mixed Reality Toolkit.",
   "keywords": [
     "xrtk",
     "vr",
@@ -15,7 +15,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/XRTK/ProjectName.git"
+    "url": "git+https://github.com/XRTK/glTF.git"
   },
   "author": "XRTK Team (https://github.com/XRTK)",
   "dependencies": {

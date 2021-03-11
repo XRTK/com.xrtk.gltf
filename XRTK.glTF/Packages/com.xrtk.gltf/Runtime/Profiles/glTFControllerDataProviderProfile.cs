@@ -3,18 +3,18 @@
 
 using XRTK.Definitions.Controllers;
 using XRTK.Definitions.Utilities;
-using XRTK.ProjectName.Providers.Controllers;
+using XRTK.glTF.Providers.Controllers;
 
-namespace XRTK.ProjectName.Profiles
+namespace XRTK.glTF.Profiles
 {
-    public class ProjectNameControllerDataProviderProfile : BaseMixedRealityControllerDataProviderProfile
+    public class glTFControllerDataProviderProfile : BaseMixedRealityControllerDataProviderProfile
     {
         public override ControllerDefinition[] GetDefaultControllerOptions()
         {
             return new[]
             {
-                new ControllerDefinition(typeof(ProjectNameController), Handedness.Left),
-                new ControllerDefinition(typeof(ProjectNameController), Handedness.Right)
+                new ControllerDefinition(typeof(glTFController), Handedness.Left),
+                new ControllerDefinition(typeof(glTFController), Handedness.Right)
             };
         }
     }

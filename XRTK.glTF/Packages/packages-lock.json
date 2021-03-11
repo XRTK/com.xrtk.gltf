@@ -87,8 +87,8 @@
       },
       "url": "http://upm.xrtk.io:4873"
     },
-    "com.xrtk.projectname": {
-      "version": "file:com.xrtk.projectname",
+    "com.xrtk.gltf": {
+      "version": "file:com.xrtk.gltf",
       "depth": 0,
       "source": "embedded",
       "dependencies": {

@@ -6,10 +6,10 @@ using System;
 namespace XRTK.Definitions.Platforms
 {
     /// <summary>
-    /// Used by the XRTK to signal that the feature is available on the ProjectName platform.
+    /// Used by the XRTK to signal that the feature is available on the glTF platform.
     /// </summary>
-    [System.Runtime.InteropServices.Guid("#INSERT_GUID_HERE#")]
-    public class ProjectNamePlatform : BasePlatform
+    [System.Runtime.InteropServices.Guid("528221ba-d2a5-45bf-a0fd-e0407ba9894c")]
+    public class glTFPlatform : BasePlatform
     {
         /// <inheritdoc />
         public override bool IsAvailable

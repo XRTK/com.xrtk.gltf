@@ -3,10 +3,10 @@
 
 using XRTK.Providers.Controllers;
 
-namespace XRTK.ProjectName.Providers.Controllers
+namespace XRTK.glTF.Providers.Controllers
 {
-    [System.Runtime.InteropServices.Guid("#INSERT_GUID_HERE#")]
-    public class ProjectNameController : BaseController
+    [System.Runtime.InteropServices.Guid("168a9236-94bd-4ff9-bf8e-3e0f62329291")]
+    public class glTFController : BaseController
     {
     }
 }

@@ -70,5 +70,5 @@ artifacts/
 ThirdParty/
 ThirdParty.meta
 --Version/
-XRTK.ProjectName/Assets/XRTK.Generated/ProjectName/Profiles
-XRTK.ProjectName/Assets/XRTK.Generated/ProjectName/Profiles.meta
+XRTK.glTF/Assets/XRTK.Generated/glTF/Profiles
+XRTK.glTF/Assets/XRTK.Generated/glTF/Profiles.meta

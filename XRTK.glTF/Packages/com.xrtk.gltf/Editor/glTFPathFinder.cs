@@ -4,15 +4,15 @@
 using UnityEngine;
 using XRTK.Editor.Utilities;
 
-namespace XRTK.ProjectName.Editor
+namespace XRTK.glTF.Editor
 {
     /// <summary>
-    /// Dummy scriptable object used to find the relative path of the com.xrtk.projectname.
+    /// Dummy scriptable object used to find the relative path of the com.xrtk.gltf.
     /// </summary>
     ///// <inheritdoc cref="IPathFinder" />
-    public class ProjectNamePathFinder : ScriptableObject, IPathFinder
+    public class glTFPathFinder : ScriptableObject, IPathFinder
     {
         ///// <inheritdoc />
-        public string Location => $"/Editor/{nameof(ProjectNamePathFinder)}.cs";
+        public string Location => $"/Editor/{nameof(glTFPathFinder)}.cs";
     }
 }

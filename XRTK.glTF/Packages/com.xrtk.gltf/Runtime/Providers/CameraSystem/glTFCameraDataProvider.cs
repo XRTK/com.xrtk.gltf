@@ -7,14 +7,14 @@ using XRTK.Definitions.Platforms;
 using XRTK.Interfaces.CameraSystem;
 using XRTK.Providers.CameraSystem;
 
-namespace XRTK.ProjectName.Providers.CameraSystem
+namespace XRTK.glTF.Providers.CameraSystem
 {
-    [RuntimePlatform(typeof(ProjectNamePlatform))]
-    [System.Runtime.InteropServices.Guid("#INSERT_GUID_HERE#")]
-    public class ProjectNameCameraDataProvider : BaseCameraDataProvider
+    [RuntimePlatform(typeof(glTFPlatform))]
+    [System.Runtime.InteropServices.Guid("0e52b086-18fe-46f5-aef6-7391f3223210")]
+    public class glTFCameraDataProvider : BaseCameraDataProvider
     {
         /// <inheritdoc />
-        public ProjectNameCameraDataProvider(string name, uint priority, BaseMixedRealityCameraDataProviderProfile profile, IMixedRealityCameraSystem parentService)
+        public glTFCameraDataProvider(string name, uint priority, BaseMixedRealityCameraDataProviderProfile profile, IMixedRealityCameraSystem parentService)
             : base(name, priority, profile, parentService)
         {
         }

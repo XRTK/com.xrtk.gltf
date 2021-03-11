@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: SymbolicLinkSettings
   m_EditorClassIdentifier: 
   symbolicLinks:
-  - sourceRelativePath: /XRTK.ProjectName/Packages/com.xrtk.projectname/Profiles~
-    targetRelativePath: /XRTK.ProjectName/Assets/XRTK.Generated/ProjectName/Profiles
+  - sourceRelativePath: /XRTK.glTF/Packages/com.xrtk.gltf/Profiles~
+    targetRelativePath: /XRTK.glTF/Assets/XRTK.Generated/glTF/Profiles
     isActive: 1
