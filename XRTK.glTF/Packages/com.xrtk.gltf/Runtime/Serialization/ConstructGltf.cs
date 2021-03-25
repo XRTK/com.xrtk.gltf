@@ -7,8 +7,10 @@ using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering;
+using XRTK.Extensions;
 using XRTK.Utilities.Async;
 using XRTK.Utilities.Gltf.Schema;
+using XRTK.Utilities.WebRequestRest;
 
 namespace XRTK.Utilities.Gltf.Serialization
 {
@@ -63,7 +65,7 @@ namespace XRTK.Utilities.Gltf.Serialization
 
             for (int i = 0; i < gltfObject.bufferViews?.Length; i++)
             {
-                gltfObject.ConstructBufferView(gltfObject.bufferViews[i]);
+                await gltfObject.ConstructBufferView(gltfObject.bufferViews[i]);
             }
 
             for (int i = 0; i < gltfObject.textures?.Length; i++)
@@ -92,7 +94,7 @@ namespace XRTK.Utilities.Gltf.Serialization
             return gltfObject.GameObjectReference = rootObject;
         }
 
-        private static void ConstructBufferView(this GltfObject gltfObject, GltfBufferView bufferView)
+        private async static Task ConstructBufferView(this GltfObject gltfObject, GltfBufferView bufferView)
         {
             bufferView.Buffer = gltfObject.buffers[bufferView.buffer];
 
@@ -100,8 +102,21 @@ namespace XRTK.Utilities.Gltf.Serialization
                 !string.IsNullOrEmpty(gltfObject.Uri) &&
                 !string.IsNullOrEmpty(bufferView.Buffer.uri))
             {
-                var parentDirectory = Directory.GetParent(gltfObject.Uri).FullName;
-                bufferView.Buffer.BufferData = File.ReadAllBytes($"{parentDirectory}\\{bufferView.Buffer.uri}");
+                if (gltfObject.Uri.ToLower().StartsWith("http"))
+                {
+                    var path = gltfObject.Uri.PathFromURI();
+                    var fullpath = path + bufferView.Buffer.uri;
+                    var response = await Rest.GetAsync(fullpath);
+                    if (response.Successful)
+                    {
+                        bufferView.Buffer.BufferData = response.ResponseData;
+                    }
+                }
+                else
+                {
+                    var parentDirectory = Directory.GetParent(gltfObject.Uri).FullName;
+                    bufferView.Buffer.BufferData = File.ReadAllBytes($"{parentDirectory}\\{bufferView.Buffer.uri}");
+                }
             }
         }
 
@@ -118,20 +133,33 @@ namespace XRTK.Utilities.Gltf.Serialization
 
                 if (!string.IsNullOrEmpty(gltfObject.Uri) && !string.IsNullOrEmpty(gltfImage.uri))
                 {
-                    var parentDirectory = Directory.GetParent(gltfObject.Uri).FullName;
-                    var path = $"{parentDirectory}\\{gltfImage.uri}";
+                    //TODO - Replace with Rest call
+                    if (gltfObject.Uri.ToLower().StartsWith("http"))
+                    {
+                        var path = gltfObject.Uri.PathFromURI();
+                        var fullpath = path + gltfImage.uri;
+                        var response = await Rest.GetAsync(fullpath);
+                        if (response.Successful)
+                        {
+                            imageData = response.ResponseData;
+                        }
+                    }
+                    else
+                    {
+                        var parentDirectory = Directory.GetParent(gltfObject.Uri).FullName;
+                        var path = $"{parentDirectory}\\{gltfImage.uri}";
 
 #if UNITY_EDITOR
-                    if (gltfObject.LoadAsynchronously) { await Awaiters.UnityMainThread; }
-                    var projectPath = path.Replace("\\", "/");
-                    projectPath = projectPath.Replace(Application.dataPath, "Assets");
-                    texture = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(projectPath);
+                        if (gltfObject.LoadAsynchronously) { await Awaiters.UnityMainThread; }
+                        var projectPath = path.Replace("\\", "/");
+                        projectPath = projectPath.Replace(Application.dataPath, "Assets");
+                        texture = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(projectPath);
 
-                    if (gltfObject.LoadAsynchronously) { await Awaiters.BackgroundThread; }
+                        if (gltfObject.LoadAsynchronously) { await Awaiters.BackgroundThread; }
 #endif
 
-                    if (texture == null)
-                    {
+                        if (texture == null)
+                        {
 #if WINDOWS_UWP
                         if (gltfObject.LoadAsynchronously)
                         {
@@ -161,20 +189,21 @@ namespace XRTK.Utilities.Gltf.Serialization
                             imageData = UnityEngine.Windows.File.ReadAllBytes(path);
                         }
 #else
-                        using (FileStream stream = File.Open(path, FileMode.Open))
-                        {
-                            imageData = new byte[stream.Length];
+                            using (FileStream stream = File.Open(path, FileMode.Open))
+                            {
+                                imageData = new byte[stream.Length];
 
-                            if (gltfObject.LoadAsynchronously)
-                            {
-                                await stream.ReadAsync(imageData, 0, (int)stream.Length);
+                                if (gltfObject.LoadAsynchronously)
+                                {
+                                    await stream.ReadAsync(imageData, 0, (int)stream.Length);
+                                }
+                                else
+                                {
+                                    stream.Read(imageData, 0, (int)stream.Length);
+                                }
                             }
-                            else
-                            {
-                                stream.Read(imageData, 0, (int)stream.Length);
-                            }
-                        }
 #endif
+                        }
                     }
                 }
                 else
@@ -207,13 +236,7 @@ namespace XRTK.Utilities.Gltf.Serialization
         {
             if (gltfObject.LoadAsynchronously) { await Awaiters.UnityMainThread; }
 
-            Material material = await CreateMRTKShaderMaterial(gltfObject, gltfMaterial, materialId);
-
-            if (material == null)
-            {
-                Debug.LogWarning("The Mixed Reality Toolkit/Standard Shader was not found. Falling back to Standard Shader");
-                material = await CreateStandardShaderMaterial(gltfObject, gltfMaterial, materialId);
-            }
+            Material material = await CreateStandardShaderMaterial(gltfObject, gltfMaterial, materialId);
 
             if (material == null)
             {
