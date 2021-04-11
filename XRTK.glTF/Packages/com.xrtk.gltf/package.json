@@ -19,7 +19,7 @@
   },
   "author": "XRTK Team (https://github.com/XRTK)",
   "dependencies": {
-    "com.xrtk.core": "0.2.7"
+    "com.xrtk.core": "0.2.10-preview.2"
   },
   "profiles": [
     {
@@ -27,5 +27,5 @@
       "path": "Profiles~/"
     }
   ],
-  "unityRelease": "19f1"
+  "unityRelease": "23f1"
 }

@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using UnityEngine;
 
 namespace XRTK.Utilities.Gltf.Schema
 {
@@ -11,7 +10,7 @@ namespace XRTK.Utilities.Gltf.Schema
     /// https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/schema/bufferView.schema.json
     /// </summary>
     [Serializable]
-    public class GltfBufferView : GltfChildOfRootProperty, ISerializationCallbackReceiver
+    public class GltfBufferView : GltfChildOfRootProperty
     {
         /// <summary>
         /// The index of the buffer.
@@ -43,35 +42,11 @@ namespace XRTK.Utilities.Gltf.Schema
         /// All valid values correspond to WebGL enums.
         /// When this is not provided, the bufferView contains animation or skin data.
         /// </summary>
-        public GltfBufferViewTarget Target { get; set; }
-
-        [SerializeField]
-        private string target = string.Empty;
+        public GltfBufferViewTarget target = GltfBufferViewTarget.None;
 
         /// <summary>
         /// https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/schema/buffer.schema.json
         /// </summary>
         public GltfBuffer Buffer { get; internal set; }
-
-#region ISerializationCallbackReceiver
-
-        void ISerializationCallbackReceiver.OnAfterDeserialize()
-        {
-            if (Enum.TryParse(target, out GltfBufferViewTarget result))
-            {
-                Target = result;
-            }
-            else
-            {
-                Target = GltfBufferViewTarget.None;
-            }
-        }
-
-        void ISerializationCallbackReceiver.OnBeforeSerialize()
-        {
-            target = Target.ToString();
-        }        
-
-#endregion ISerializationCallbackReceiver
     }
 }

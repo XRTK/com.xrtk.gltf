@@ -104,12 +104,12 @@ namespace XRTK.Utilities.Gltf.Schema
         /// <summary>
         /// The name of the gltf Object.
         /// </summary>
-        public string Name { get; internal set; }
+        public string Name { get; set; }
 
         /// <summary>
         /// The absolute path to the glTF Object on disk.
         /// </summary>
-        public string Uri { get; internal set; }
+        public string Uri { get; set; }
 
         /// <summary>
         /// The <see cref="GameObject"/> reference for the gltf Object.
