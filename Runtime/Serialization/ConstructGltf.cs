@@ -61,7 +61,10 @@ namespace XRTK.Utilities.Gltf.Serialization
             var rootObject = new GameObject($"glTF Scene {gltfObject.Name}");
             rootObject.SetActive(false);
 
-            if (gltfObject.LoadAsynchronously) await Awaiters.BackgroundThread;
+            if (gltfObject.LoadAsynchronously)
+            {
+                await Awaiters.BackgroundThread;
+            }
 
             for (int i = 0; i < gltfObject.bufferViews?.Length; i++)
             {
@@ -122,7 +125,10 @@ namespace XRTK.Utilities.Gltf.Serialization
 
         private static async Task ConstructTextureAsync(this GltfObject gltfObject, GltfTexture gltfTexture)
         {
-            if (gltfObject.LoadAsynchronously) await Awaiters.BackgroundThread;
+            if (gltfObject.LoadAsynchronously)
+            {
+                await Awaiters.BackgroundThread;
+            }
 
             if (gltfTexture.source >= 0)
             {
