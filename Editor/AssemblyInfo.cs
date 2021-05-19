@@ -5,7 +5,7 @@
 
 using System.Reflection;
 
-[assembly: AssemblyVersion("0.2.3")]
+[assembly: AssemblyVersion("0.2.4")]
 [assembly: AssemblyTitle("com.xrtk.gltf.editor")]
 [assembly: AssemblyCompany("XRTK")]
 [assembly: AssemblyCopyright("Copyright (c) XRTK. All rights reserved.")]
