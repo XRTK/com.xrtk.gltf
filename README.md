@@ -7,3 +7,4 @@ This is an XRTK implementation of the [Khronos Unity glTF](https://github.com/Kh
 # Build Status
 
 [![Build Status](https://dev.azure.com/xrtk/Mixed%20Reality%20Toolkit/_apis/build/status/com.xrtk.gltf?repoName=XRTK%2FglTF&branchName=main)](https://dev.azure.com/xrtk/Mixed%20Reality%20Toolkit/_build/latest?definitionId=59&repoName=XRTK%2FglTF&branchName=main)
+[![openupm](https://img.shields.io/npm/v/com.xrtk.gltf?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.xrtk.gltf/)
