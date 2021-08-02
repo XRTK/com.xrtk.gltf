@@ -1,9 +1,8 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) XRTK. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -26,29 +25,23 @@ namespace XRTK.Utilities.Gltf.Serialization
         private static readonly int GlossinessId = Shader.PropertyToID("_Glossiness");
         private static readonly int MetallicId = Shader.PropertyToID("_Metallic");
         private static readonly int BumpMapId = Shader.PropertyToID("_BumpMap");
-        private static readonly int EmissiveColorId = Shader.PropertyToID("_EmissiveColor");
-        private static readonly int ChannelMapId = Shader.PropertyToID("_ChannelMap");
-        private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
-        private static readonly int NormalMapId = Shader.PropertyToID("_NormalMap");
-        private static readonly int NormalMapScaleId = Shader.PropertyToID("_NormalMapScale");
-        private static readonly int CullModeId = Shader.PropertyToID("_CullMode");
 
         /// <summary>
         /// Constructs the glTF Object.
         /// </summary>
         /// <param name="gltfObject"></param>
+        /// <param name="setActive"></param>
         /// <returns>The new <see cref="GameObject"/> of the final constructed <see cref="GltfScene"/></returns>
-        public static async void Construct(this GltfObject gltfObject)
-        {
-            await gltfObject.ConstructAsync();
-        }
+        public static async void Construct(this GltfObject gltfObject, bool setActive = true)
+            => await gltfObject.ConstructAsync(setActive);
 
         /// <summary>
         /// Constructs the glTF Object.
         /// </summary>
         /// <param name="gltfObject"></param>
+        /// <param name="setActive"></param>
         /// <returns>The new <see cref="GameObject"/> of the final constructed <see cref="GltfScene"/></returns>
-        public static async Task<GameObject> ConstructAsync(this GltfObject gltfObject)
+        public static async Task<GameObject> ConstructAsync(this GltfObject gltfObject, bool setActive = true)
         {
             if (!gltfObject.asset.version.Contains("2.0"))
             {
@@ -61,10 +54,7 @@ namespace XRTK.Utilities.Gltf.Serialization
             var rootObject = new GameObject($"glTF Scene {gltfObject.Name}");
             rootObject.SetActive(false);
 
-            if (gltfObject.LoadAsynchronously)
-            {
-                await Awaiters.BackgroundThread;
-            }
+            if (gltfObject.LoadAsynchronously) { await Awaiters.BackgroundThread; }
 
             for (int i = 0; i < gltfObject.bufferViews?.Length; i++)
             {
@@ -93,11 +83,11 @@ namespace XRTK.Utilities.Gltf.Serialization
                 await gltfObject.ConstructSceneAsync(gltfObject.scenes[i], rootObject);
             }
 
-            rootObject.SetActive(true);
+            rootObject.SetActive(setActive);
             return gltfObject.GameObjectReference = rootObject;
         }
 
-        private async static Task ConstructBufferView(this GltfObject gltfObject, GltfBufferView bufferView)
+        private static async Task ConstructBufferView(this GltfObject gltfObject, GltfBufferView bufferView)
         {
             bufferView.Buffer = gltfObject.buffers[bufferView.buffer];
 
@@ -105,111 +95,41 @@ namespace XRTK.Utilities.Gltf.Serialization
                 !string.IsNullOrEmpty(gltfObject.Uri) &&
                 !string.IsNullOrEmpty(bufferView.Buffer.uri))
             {
-                if (gltfObject.Uri.ToLower().StartsWith("http"))
+                var path = gltfObject.Uri.PathFromURI();
+                var loadTask = Rest.GetAsync($"{path}{bufferView.Buffer.uri}");
+                var response = gltfObject.LoadAsynchronously ? await loadTask : loadTask.Result;
+
+                if (response.Successful)
                 {
-                    var path = gltfObject.Uri.PathFromURI();
-                    var fullpath = path + bufferView.Buffer.uri;
-                    var response = await Rest.GetAsync(fullpath);
-                    if (response.Successful)
-                    {
-                        bufferView.Buffer.BufferData = response.ResponseData;
-                    }
-                }
-                else
-                {
-                    var parentDirectory = Directory.GetParent(gltfObject.Uri).FullName;
-                    bufferView.Buffer.BufferData = File.ReadAllBytes($"{parentDirectory}\\{bufferView.Buffer.uri}");
+                    bufferView.Buffer.BufferData = response.ResponseData;
                 }
             }
         }
 
         private static async Task ConstructTextureAsync(this GltfObject gltfObject, GltfTexture gltfTexture)
         {
-            if (gltfObject.LoadAsynchronously)
-            {
-                await Awaiters.BackgroundThread;
-            }
+            if (gltfObject.LoadAsynchronously) { await Awaiters.BackgroundThread; }
 
             if (gltfTexture.source >= 0)
             {
-                GltfImage gltfImage = gltfObject.images[gltfTexture.source];
+                var gltfImage = gltfObject.images[gltfTexture.source];
 
                 byte[] imageData = null;
                 Texture2D texture = null;
 
-                if (!string.IsNullOrEmpty(gltfObject.Uri) && !string.IsNullOrEmpty(gltfImage.uri))
+                if (!string.IsNullOrEmpty(gltfObject.Uri) &&
+                    !string.IsNullOrEmpty(gltfImage.uri))
                 {
-                    //TODO - Replace with Rest call
-                    if (gltfObject.Uri.ToLower().StartsWith("http"))
+                    var path = gltfObject.Uri.PathFromURI();
+                    var textureLoadTask = Rest.DownloadTextureAsync($"{path}{gltfImage.uri}");
+
+                    if (gltfObject.LoadAsynchronously)
                     {
-                        var path = gltfObject.Uri.PathFromURI();
-                        var fullpath = path + gltfImage.uri;
-                        var response = await Rest.GetAsync(fullpath);
-                        if (response.Successful)
-                        {
-                            imageData = response.ResponseData;
-                        }
+                        texture = await textureLoadTask;
                     }
                     else
                     {
-                        var parentDirectory = Directory.GetParent(gltfObject.Uri).FullName;
-                        var path = $"{parentDirectory}\\{gltfImage.uri}";
-
-#if UNITY_EDITOR
-                        if (gltfObject.LoadAsynchronously) { await Awaiters.UnityMainThread; }
-                        var projectPath = path.Replace("\\", "/");
-                        projectPath = projectPath.Replace(Application.dataPath, "Assets");
-                        texture = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(projectPath);
-
-                        if (gltfObject.LoadAsynchronously) { await Awaiters.BackgroundThread; }
-#endif
-
-                        if (texture == null)
-                        {
-#if WINDOWS_UWP
-                        if (gltfObject.LoadAsynchronously)
-                        {
-                            try
-                            {
-                                var storageFile = await Windows.Storage.StorageFile.GetFileFromPathAsync(path);
-
-                                if (storageFile != null)
-                                {
-
-                                    var buffer = await Windows.Storage.FileIO.ReadBufferAsync(storageFile);
-
-                                    using (Windows.Storage.Streams.DataReader dataReader = Windows.Storage.Streams.DataReader.FromBuffer(buffer))
-                                    {
-                                        imageData = new byte[buffer.Length];
-                                        dataReader.ReadBytes(imageData);
-                                    }
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                Debug.LogError(e.Message);
-                            }
-                        }
-                        else
-                        {
-                            imageData = UnityEngine.Windows.File.ReadAllBytes(path);
-                        }
-#else
-                            using (FileStream stream = File.Open(path, FileMode.Open))
-                            {
-                                imageData = new byte[stream.Length];
-
-                                if (gltfObject.LoadAsynchronously)
-                                {
-                                    await stream.ReadAsync(imageData, 0, (int)stream.Length);
-                                }
-                                else
-                                {
-                                    stream.Read(imageData, 0, (int)stream.Length);
-                                }
-                            }
-#endif
-                        }
+                        texture = textureLoadTask.GetAwaiter().GetResult();
                     }
                 }
                 else
@@ -222,7 +142,7 @@ namespace XRTK.Utilities.Gltf.Serialization
                 if (texture == null)
                 {
                     if (gltfObject.LoadAsynchronously) { await Awaiters.UnityMainThread; }
-                    // TODO Load texture async
+                    // TODO Load texture async from native plugin?
                     texture = new Texture2D(2, 2);
                     gltfImage.Texture = texture;
                     gltfImage.Texture.LoadImage(imageData);
@@ -232,7 +152,7 @@ namespace XRTK.Utilities.Gltf.Serialization
                     gltfImage.Texture = texture;
                 }
 
-                gltfTexture.Texture = texture;
+                gltfTexture.Texture = gltfImage.Texture;
 
                 if (gltfObject.LoadAsynchronously) { await Awaiters.BackgroundThread; }
             }
@@ -242,7 +162,7 @@ namespace XRTK.Utilities.Gltf.Serialization
         {
             if (gltfObject.LoadAsynchronously) { await Awaiters.UnityMainThread; }
 
-            Material material = await CreateStandardShaderMaterial(gltfObject, gltfMaterial, materialId);
+            var material = await CreateStandardShaderMaterial(gltfObject, gltfMaterial, materialId);
 
             if (material == null)
             {
@@ -254,120 +174,6 @@ namespace XRTK.Utilities.Gltf.Serialization
             }
 
             if (gltfObject.LoadAsynchronously) { await Awaiters.BackgroundThread; }
-        }
-
-        private static async Task<Material> CreateMRTKShaderMaterial(GltfObject gltfObject, GltfMaterial gltfMaterial, int materialId)
-        {
-            var shader = Shader.Find("Mixed Reality Toolkit/Standard");
-
-            if (shader == null) { return null; }
-
-            var material = new Material(shader)
-            {
-                name = string.IsNullOrEmpty(gltfMaterial.name) ? $"glTF Material {materialId}" : gltfMaterial.name
-            };
-
-            if (gltfMaterial.pbrMetallicRoughness.baseColorTexture.index >= 0)
-            {
-                material.mainTexture = gltfObject.images[gltfMaterial.pbrMetallicRoughness.baseColorTexture.index].Texture;
-            }
-
-            material.color = gltfMaterial.pbrMetallicRoughness.baseColorFactor.GetColorValue();
-
-            if (gltfMaterial.alphaMode == "MASK")
-            {
-                material.SetInt(SrcBlendId, (int)BlendMode.One);
-                material.SetInt(DstBlendId, (int)BlendMode.Zero);
-                material.SetInt(ZWriteId, 1);
-                material.SetInt(ModeId, 3);
-                material.SetOverrideTag("RenderType", "Cutout");
-                material.EnableKeyword("_ALPHATEST_ON");
-                material.DisableKeyword("_ALPHABLEND_ON");
-                material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                material.renderQueue = 2450;
-            }
-            else if (gltfMaterial.alphaMode == "BLEND")
-            {
-                material.SetInt(SrcBlendId, (int)BlendMode.One);
-                material.SetInt(DstBlendId, (int)BlendMode.OneMinusSrcAlpha);
-                material.SetInt(ZWriteId, 0);
-                material.SetInt(ModeId, 3);
-                material.SetOverrideTag("RenderType", "Transparency");
-                material.DisableKeyword("_ALPHATEST_ON");
-                material.DisableKeyword("_ALPHABLEND_ON");
-                material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
-                material.renderQueue = 3000;
-            }
-
-            if (gltfMaterial.emissiveTexture.index >= 0 && material.HasProperty("_EmissionMap"))
-            {
-                material.EnableKeyword("_EMISSION");
-                material.SetColor(EmissiveColorId, gltfMaterial.emissiveFactor.GetColorValue());
-            }
-
-            if (gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index >= 0)
-            {
-                var texture = gltfObject.images[gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index].Texture;
-
-                Texture2D occlusionTexture = null;
-                if (gltfMaterial.occlusionTexture.index >= 0)
-                {
-                    occlusionTexture = gltfObject.images[gltfMaterial.occlusionTexture.index].Texture;
-                }
-
-                if (texture.isReadable)
-                {
-                    var pixels = texture.GetPixels();
-                    Color[] occlusionPixels = null;
-                    if (occlusionTexture != null &&
-                        occlusionTexture.isReadable)
-                    {
-                        occlusionPixels = occlusionTexture.GetPixels();
-                    }
-
-                    if (gltfObject.LoadAsynchronously) { await Awaiters.BackgroundThread; }
-
-                    var pixelCache = new Color[pixels.Length];
-
-                    for (int c = 0; c < pixels.Length; c++)
-                    {
-                        pixelCache[c].r = pixels[c].b; // MRTK standard shader metallic value, glTF metallic value
-                        pixelCache[c].g = occlusionPixels?[c].r ?? 1.0f; // MRTK standard shader occlusion value, glTF occlusion value if available
-                        pixelCache[c].b = 0f; // MRTK standard shader emission value
-                        pixelCache[c].a = (1.0f - pixels[c].g); // MRTK standard shader smoothness value, invert of glTF roughness value
-                    }
-
-                    if (gltfObject.LoadAsynchronously) { await Awaiters.UnityMainThread; }
-                    texture.SetPixels(pixelCache);
-                    texture.Apply();
-
-                    material.SetTexture(ChannelMapId, texture);
-                    material.EnableKeyword("_CHANNEL_MAP");
-                }
-                else
-                {
-                    material.DisableKeyword("_CHANNEL_MAP");
-                }
-
-                material.SetFloat(SmoothnessId, Mathf.Abs((float)gltfMaterial.pbrMetallicRoughness.roughnessFactor - 1f));
-                material.SetFloat(MetallicId, (float)gltfMaterial.pbrMetallicRoughness.metallicFactor);
-            }
-
-
-            if (gltfMaterial.normalTexture.index >= 0)
-            {
-                material.SetTexture(NormalMapId, gltfObject.images[gltfMaterial.normalTexture.index].Texture);
-                material.SetFloat(NormalMapScaleId, (float)gltfMaterial.normalTexture.scale);
-                material.EnableKeyword("_NORMAL_MAP");
-            }
-
-            if (gltfMaterial.doubleSided)
-            {
-                material.SetFloat(CullModeId, (float)UnityEngine.Rendering.CullMode.Off);
-            }
-
-            material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-            return material;
         }
 
         private static async Task<Material> CreateStandardShaderMaterial(GltfObject gltfObject, GltfMaterial gltfMaterial, int materialId)
@@ -486,7 +292,7 @@ namespace XRTK.Utilities.Gltf.Serialization
 
             if (gltfObject.LoadAsynchronously) { await Awaiters.BackgroundThread; }
 
-            node.Matrix = node.GetTrsProperties(out Vector3 position, out Quaternion rotation, out Vector3 scale);
+            node.Matrix = node.GetTrsProperties(out var position, out var rotation, out var scale);
 
             if (node.Matrix == Matrix4x4.identity)
             {
@@ -531,10 +337,9 @@ namespace XRTK.Utilities.Gltf.Serialization
 
         private static async Task ConstructMeshAsync(GltfObject gltfObject, GameObject parent, int meshId)
         {
-            GltfMesh gltfMesh = gltfObject.meshes[meshId];
-
-            var renderer = parent.gameObject.AddComponent<MeshRenderer>();
+            var gltfMesh = gltfObject.meshes[meshId];
             var filter = parent.gameObject.AddComponent<MeshFilter>();
+            var renderer = parent.gameObject.AddComponent<MeshRenderer>();
 
             if (gltfMesh.primitives.Length == 1)
             {
@@ -666,7 +471,7 @@ namespace XRTK.Utilities.Gltf.Serialization
 
             var mesh = new Mesh
             {
-                indexFormat = vertexCount > UInt16.MaxValue ? IndexFormat.UInt32 : IndexFormat.UInt16,
+                indexFormat = vertexCount > ushort.MaxValue ? IndexFormat.UInt32 : IndexFormat.UInt16,
             };
 
             if (positionAccessor != null)
