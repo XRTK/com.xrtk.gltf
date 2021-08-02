@@ -19,12 +19,7 @@
   },
   "author": "XRTK Team (https://github.com/XRTK)",
   "dependencies": {
-    "com.xrtk.core": "0.3.0-preview.1"
-  },
-  "profiles": [
-    {
-      "displayName": "Default Profiles",
-      "path": "Profiles~/"
-    }
-  ]
+    "com.xrtk.core": "0.3.0-preview.10",
+    "com.unity.nuget.newtonsoft-json": "2.0.1-preview.1"
+  }
 }

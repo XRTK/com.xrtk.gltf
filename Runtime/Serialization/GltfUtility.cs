@@ -1,16 +1,20 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) XRTK. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEngine;
+using XRTK.Extensions;
 using XRTK.Utilities.Async;
 using XRTK.Utilities.Async.Internal;
 using XRTK.Utilities.Gltf.Schema;
+using XRTK.Utilities.WebRequestRest;
 
 namespace XRTK.Utilities.Gltf.Serialization
 {
@@ -21,13 +25,14 @@ namespace XRTK.Utilities.Gltf.Serialization
         /// <summary>
         /// Imports a glTF object from the provided uri.
         /// </summary>
-        /// <param name="uri">the path to the file to load</param>
+        /// <param name="uri">The path to the file to load.</param>
+        /// <param name="setActive">Set the gltf <see cref="GameObject"/> active as soon as it's been loaded.</param>
         /// <returns>New <see cref="GltfObject"/> imported from uri.</returns>
         /// <remarks>
         /// Must be called from the main thread.
         /// If the <see cref="Application.isPlaying"/> is false, then this method will run synchronously.
         /// </remarks>
-        public static async Task<GltfObject> ImportGltfObjectFromPathAsync(string uri)
+        public static async Task<GltfObject> ImportGltfObjectFromPathAsync(string uri, bool setActive = true)
         {
             if (!SyncContextUtility.IsMainThread)
             {
@@ -41,17 +46,71 @@ namespace XRTK.Utilities.Gltf.Serialization
                 return null;
             }
 
+            string gltfPath;
             GltfObject gltfObject;
-            bool isGlb = false;
-            bool loadAsynchronously = Application.isPlaying;
+
+            var isGlb = false;
+            var loadAsynchronously = Application.isPlaying;
 
             if (loadAsynchronously) { await Awaiters.BackgroundThread; }
 
-            if (uri.EndsWith(".gltf"))
+            if (uri.Contains(".zip"))
             {
-                string gltfJson = File.ReadAllText(uri);
+                var directory = Path.GetFullPath(uri.Replace(".zip", string.Empty)).ForwardSlashes();
 
-                gltfObject = GetGltfObjectFromJson(gltfJson);
+                if (!Directory.Exists(directory))
+                {
+                    try
+                    {
+                        ZipFile.ExtractToDirectory(uri, directory);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"Failed to unzip {uri}\n{e}");
+                        return null;
+                    }
+                }
+
+                gltfPath = Directory.GetFiles(directory, "*", SearchOption.TopDirectoryOnly)
+                    .FirstOrDefault(extension =>
+                        extension.Contains(".gltf") ||
+                        extension.Contains(".glb"));
+            }
+            else
+            {
+                gltfPath = uri;
+            }
+
+            if (string.IsNullOrWhiteSpace(gltfPath))
+            {
+                Debug.LogError($"No gltf file found @\"{uri}\"!");
+                return null;
+            }
+
+            var loadResourceTask = Rest.GetAsync(gltfPath);
+            var response = loadAsynchronously
+                ? await loadResourceTask
+                : loadResourceTask.Result;
+
+            if (!response.Successful)
+            {
+                Debug.LogError($"Error loading gltf object!\n{response.ResponseBody}");
+                return null;
+            }
+
+            if (gltfPath.EndsWith(".gltf"))
+            {
+                var json = string.IsNullOrWhiteSpace(response.ResponseBody)
+                    ? Encoding.UTF8.GetString(response.ResponseData)
+                    : response.ResponseBody;
+
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    Debug.Log($"Failed to decode gltf json form {uri}!");
+                    return null;
+                }
+
+                gltfObject = GetGltfObjectFromJson(json);
 
                 if (gltfObject == null)
                 {
@@ -59,60 +118,10 @@ namespace XRTK.Utilities.Gltf.Serialization
                     return null;
                 }
             }
-            else if (uri.EndsWith(".glb"))
+            else if (gltfPath.EndsWith(".glb"))
             {
                 isGlb = true;
-                byte[] glbData;
-
-#if WINDOWS_UWP
-
-                if (loadAsynchronously)
-                {
-                    try
-                    {
-                        var storageFile = await Windows.Storage.StorageFile.GetFileFromPathAsync(uri);
-
-                        if (storageFile == null)
-                        {
-                            Debug.LogError($"Failed to locate .glb file at {uri}");
-                            return null;
-                        }
-
-                        var buffer = await Windows.Storage.FileIO.ReadBufferAsync(storageFile);
-
-                        using (Windows.Storage.Streams.DataReader dataReader = Windows.Storage.Streams.DataReader.FromBuffer(buffer))
-                        {
-                            glbData = new byte[buffer.Length];
-                            dataReader.ReadBytes(glbData);
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogError(e.Message);
-                        return null;
-                    }
-                }
-                else
-                {
-                    glbData = UnityEngine.Windows.File.ReadAllBytes(uri);
-                }
-#else
-                using (var stream = File.Open(uri, FileMode.Open))
-                {
-                    glbData = new byte[stream.Length];
-
-                    if (loadAsynchronously)
-                    {
-                        await stream.ReadAsync(glbData, 0, (int)stream.Length);
-                    }
-                    else
-                    {
-                        stream.Read(glbData, 0, (int)stream.Length);
-                    }
-                }
-#endif
-
-                gltfObject = GetGltfObjectFromGlb(glbData);
+                gltfObject = GetGltfObjectFromGlb(response.ResponseData);
 
                 if (gltfObject == null)
                 {
@@ -126,15 +135,13 @@ namespace XRTK.Utilities.Gltf.Serialization
                 return null;
             }
 
-            gltfObject.Uri = uri;
-            int nameStart = uri.Replace("\\", "/").LastIndexOf("/", StringComparison.Ordinal) + 1;
-            int nameLength = uri.Length - nameStart;
-            gltfObject.Name = uri.Substring(nameStart, nameLength).Replace(isGlb ? ".glb" : ".gltf", string.Empty);
-
+            gltfObject.Uri = gltfPath;
+            gltfObject.Name = gltfObject.Uri.FilenameFromURI().Replace(isGlb ? ".glb" : ".gltf", string.Empty);
             gltfObject.LoadAsynchronously = loadAsynchronously;
-            await gltfObject.ConstructAsync();
 
-            if (gltfObject.GameObjectReference == null)
+            await gltfObject.ConstructAsync(setActive);
+
+            if (gltfObject.GameObjectReference.IsNull())
             {
                 Debug.LogError("Failed to construct glTF Object.");
             }
@@ -281,7 +288,7 @@ namespace XRTK.Utilities.Gltf.Serialization
                 return jsonObjects;
             }
 
-            MatchCollection matches = regex.Matches(jsonString);
+            var matches = regex.Matches(jsonString);
 
             for (var i = 0; i < matches.Count; i++)
             {

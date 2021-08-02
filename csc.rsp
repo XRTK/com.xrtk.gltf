@@ -1,0 +1,3 @@
+-warn:4
+-warnaserror+
+-r:System.IO.Compression.FileSystem.dll
