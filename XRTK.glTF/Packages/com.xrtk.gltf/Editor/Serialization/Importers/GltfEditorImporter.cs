@@ -72,6 +72,7 @@ namespace XRTK.Utilities.Gltf.Serialization.Importers
             {
                 var importer = AssetImporter.GetAtPath(context.assetPath);
                 importer.SaveAndReimport();
+                AssetDatabase.SaveAssets();
                 return;
             }
 
