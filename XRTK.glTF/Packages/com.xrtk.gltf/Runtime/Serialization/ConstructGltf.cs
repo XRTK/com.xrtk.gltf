@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -96,8 +97,19 @@ namespace XRTK.Utilities.Gltf.Serialization
                 !string.IsNullOrEmpty(bufferView.Buffer.uri))
             {
                 var path = gltfObject.Uri.PathFromURI();
-                var loadTask = Rest.GetAsync($"{path}{bufferView.Buffer.uri}");
-                var response = gltfObject.LoadAsynchronously ? await loadTask : loadTask.Result;
+                var fullPath = $"{path}{bufferView.Buffer.uri}";
+
+                Response response;
+
+                if (gltfObject.LoadAsynchronously)
+                {
+                    response = await Rest.GetAsync(fullPath);
+                }
+                else
+                {
+                    var data = File.ReadAllBytes(fullPath);
+                    response = new Response(true, null, data, 200);
+                }
 
                 if (response.Successful)
                 {
@@ -121,15 +133,18 @@ namespace XRTK.Utilities.Gltf.Serialization
                     !string.IsNullOrEmpty(gltfImage.uri))
                 {
                     var path = gltfObject.Uri.PathFromURI();
-                    var textureLoadTask = Rest.DownloadTextureAsync($"{path}{gltfImage.uri}");
 
                     if (gltfObject.LoadAsynchronously)
                     {
-                        texture = await textureLoadTask;
+                        texture = await Rest.DownloadTextureAsync($"{path}{gltfImage.uri}");
                     }
                     else
                     {
-                        texture = textureLoadTask.GetAwaiter().GetResult();
+#if UNITY_EDITOR
+                        texture = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>($"{path}{gltfImage.uri}");
+#else
+                        throw new NotImplementedException();
+#endif
                     }
                 }
                 else

@@ -36,7 +36,7 @@ namespace XRTK.Utilities.Gltf.Serialization
         {
             if (!SyncContextUtility.IsMainThread)
             {
-                Debug.LogError("ImportGltfObjectFromPathAsync must be called from the main thread!");
+                Debug.LogError($"{nameof(ImportGltfObjectFromPathAsync)} must be called from the main thread!");
                 return null;
             }
 
@@ -87,10 +87,25 @@ namespace XRTK.Utilities.Gltf.Serialization
                 return null;
             }
 
-            var loadResourceTask = Rest.GetAsync(gltfPath);
-            var response = loadAsynchronously
-                ? await loadResourceTask
-                : loadResourceTask.Result;
+            Response response;
+
+            if (loadAsynchronously)
+            {
+                response = await Rest.GetAsync(gltfPath);
+            }
+            else
+            {
+                try
+                {
+                    var json = File.ReadAllText(gltfPath);
+                    var data = File.ReadAllBytes(gltfPath);
+                    response = new Response(true, json, data, 200);
+                }
+                catch (Exception e)
+                {
+                    response = new Response(false, $"{e}", null, 0);
+                }
+            }
 
             if (!response.Successful)
             {
