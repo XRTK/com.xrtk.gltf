@@ -61,7 +61,10 @@ namespace XRTK.Utilities.Gltf.Serialization.Importers
                         var textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;
                         Debug.Assert(textureImporter != null);
                         textureImporter.isReadable = true;
-                        textureImporter.SetPlatformTextureSettings(new TextureImporterPlatformSettings { format = TextureImporterFormat.RGBA32 });
+                        textureImporter.SetPlatformTextureSettings(new TextureImporterPlatformSettings
+                        {
+                            format = TextureImporterFormat.RGBA32
+                        });
                         textureImporter.SaveAndReimport();
                         reImport = true;
                     }
@@ -90,18 +93,18 @@ namespace XRTK.Utilities.Gltf.Serialization.Importers
             {
                 foreach (var gltfMaterial in gltfAsset.GltfObject.materials)
                 {
-                    if (context.assetPath.EndsWith(".glb"))
-                    {
-                        context.AddObjectToAsset(gltfMaterial.name, gltfMaterial.Material);
-                    }
-                    else
-                    {
-                        var path = Path.GetFullPath(Path.GetDirectoryName(context.assetPath));
-                        path = path.Replace("\\", "/").Replace(Application.dataPath, "Assets");
-                        path = $"{path}/{gltfMaterial.name}.mat";
-                        AssetDatabase.CreateAsset(gltfMaterial.Material, path);
-                        gltfMaterial.Material = AssetDatabase.LoadAssetAtPath<Material>(path);
-                    }
+                    context.AddObjectToAsset(gltfMaterial.name, gltfMaterial.Material);
+                    //if (context.assetPath.EndsWith(".glb"))
+                    //{
+                    //}
+                    //else
+                    //{
+                    //    var path = Path.GetFullPath(Path.GetDirectoryName(context.assetPath));
+                    //    path = path.Replace("\\", "/").Replace(Application.dataPath, "Assets");
+                    //    path = $"{path}/{gltfMaterial.name}.mat";
+                    //    AssetDatabase.CreateAsset(gltfMaterial.Material, path);
+                    //    gltfMaterial.Material = AssetDatabase.LoadAssetAtPath<Material>(path);
+                    //}
                 }
             }
 
