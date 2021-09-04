@@ -7,7 +7,6 @@ using UnityEditor.Experimental.AssetImporters;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
-using XRTK.Utilities.Gltf.Schema;
 
 namespace XRTK.Utilities.Gltf.Serialization.Importers
 {
@@ -33,11 +32,11 @@ namespace XRTK.Utilities.Gltf.Serialization.Importers
             context.SetMainObject(importedObject.GameObjectReference);
             context.AddObjectToAsset("glTF data", gltfAsset);
 
-            bool reImport = false;
+            var reImport = false;
 
             for (var i = 0; i < gltfAsset.GltfObject.textures?.Length; i++)
             {
-                GltfTexture gltfTexture = gltfAsset.GltfObject.textures[i];
+                var gltfTexture = gltfAsset.GltfObject.textures[i];
 
                 if (gltfTexture == null) { continue; }
 
@@ -57,15 +56,17 @@ namespace XRTK.Utilities.Gltf.Serialization.Importers
                 }
                 else
                 {
-                    if (!gltfTexture.Texture.isReadable)
+                    if (gltfTexture.Texture.isReadable) { continue; }
+
+                    var textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;
+                    Debug.Assert(textureImporter != null);
+                    textureImporter.isReadable = true;
+                    textureImporter.SetPlatformTextureSettings(new TextureImporterPlatformSettings
                     {
-                        var textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;
-                        Debug.Assert(textureImporter != null);
-                        textureImporter.isReadable = true;
-                        textureImporter.SetPlatformTextureSettings(new TextureImporterPlatformSettings { format = TextureImporterFormat.RGBA32 });
-                        textureImporter.SaveAndReimport();
-                        reImport = true;
-                    }
+                        format = TextureImporterFormat.RGBA32
+                    });
+                    textureImporter.SaveAndReimport();
+                    reImport = true;
                 }
             }
 
@@ -73,14 +74,15 @@ namespace XRTK.Utilities.Gltf.Serialization.Importers
             {
                 var importer = AssetImporter.GetAtPath(context.assetPath);
                 importer.SaveAndReimport();
+                AssetDatabase.SaveAssets();
                 return;
             }
 
             for (var i = 0; i < gltfAsset.GltfObject.meshes?.Length; i++)
             {
-                GltfMesh gltfMesh = gltfAsset.GltfObject.meshes[i];
+                var gltfMesh = gltfAsset.GltfObject.meshes[i];
 
-                string meshName = string.IsNullOrWhiteSpace(gltfMesh.name) ? $"Mesh_{i}" : gltfMesh.name;
+                var meshName = string.IsNullOrWhiteSpace(gltfMesh.name) ? $"Mesh_{i}" : gltfMesh.name;
 
                 gltfMesh.Mesh.name = meshName;
                 context.AddObjectToAsset($"{meshName}", gltfMesh.Mesh);
@@ -88,22 +90,13 @@ namespace XRTK.Utilities.Gltf.Serialization.Importers
 
             if (gltfAsset.GltfObject.materials != null)
             {
-                foreach (GltfMaterial gltfMaterial in gltfAsset.GltfObject.materials)
+                foreach (var gltfMaterial in gltfAsset.GltfObject.materials)
                 {
-                    if (context.assetPath.EndsWith(".glb"))
-                    {
-                        context.AddObjectToAsset(gltfMaterial.name, gltfMaterial.Material);
-                    }
-                    else
-                    {
-                        var path = Path.GetFullPath(Path.GetDirectoryName(context.assetPath));
-                        path = path.Replace("\\", "/").Replace(Application.dataPath, "Assets");
-                        path = $"{path}/{gltfMaterial.name}.mat";
-                        AssetDatabase.CreateAsset(gltfMaterial.Material, path);
-                        gltfMaterial.Material = AssetDatabase.LoadAssetAtPath<Material>(path);
-                    }
+                    context.AddObjectToAsset(gltfMaterial.name, gltfMaterial.Material);
                 }
             }
+
+            AssetDatabase.SaveAssets();
         }
     }
 }
