@@ -7,7 +7,6 @@ using UnityEditor.Experimental.AssetImporters;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
-using XRTK.Utilities.Gltf.Schema;
 
 namespace XRTK.Utilities.Gltf.Serialization.Importers
 {
@@ -37,7 +36,7 @@ namespace XRTK.Utilities.Gltf.Serialization.Importers
 
             for (var i = 0; i < gltfAsset.GltfObject.textures?.Length; i++)
             {
-                GltfTexture gltfTexture = gltfAsset.GltfObject.textures[i];
+                var gltfTexture = gltfAsset.GltfObject.textures[i];
 
                 if (gltfTexture == null) { continue; }
 
@@ -78,9 +77,9 @@ namespace XRTK.Utilities.Gltf.Serialization.Importers
 
             for (var i = 0; i < gltfAsset.GltfObject.meshes?.Length; i++)
             {
-                GltfMesh gltfMesh = gltfAsset.GltfObject.meshes[i];
+                var gltfMesh = gltfAsset.GltfObject.meshes[i];
 
-                string meshName = string.IsNullOrWhiteSpace(gltfMesh.name) ? $"Mesh_{i}" : gltfMesh.name;
+                var meshName = string.IsNullOrWhiteSpace(gltfMesh.name) ? $"Mesh_{i}" : gltfMesh.name;
 
                 gltfMesh.Mesh.name = meshName;
                 context.AddObjectToAsset($"{meshName}", gltfMesh.Mesh);
@@ -88,7 +87,7 @@ namespace XRTK.Utilities.Gltf.Serialization.Importers
 
             if (gltfAsset.GltfObject.materials != null)
             {
-                foreach (GltfMaterial gltfMaterial in gltfAsset.GltfObject.materials)
+                foreach (var gltfMaterial in gltfAsset.GltfObject.materials)
                 {
                     if (context.assetPath.EndsWith(".glb"))
                     {
@@ -104,6 +103,8 @@ namespace XRTK.Utilities.Gltf.Serialization.Importers
                     }
                 }
             }
+
+            AssetDatabase.SaveAssets();
         }
     }
 }
