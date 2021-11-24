@@ -19,7 +19,7 @@
   },
   "author": "XRTK Team (https://github.com/XRTK)",
   "dependencies": {
-    "com.xrtk.core": "0.3.0-preview.22",
+    "com.xrtk.core": "0.3.0-preview.39",
     "com.unity.nuget.newtonsoft-json": "2.0.1-preview.1"
   }
 }
