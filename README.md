@@ -10,6 +10,5 @@ This is an XRTK implementation of the [Khronos Unity glTF](https://github.com/Kh
 
 | branch | build status |
 | --- | --- |
-| main | [![main](https://github.com/XRTK/com.xrtk.gltf/actions/workflows/build.yml/badge.svg?lbranch=main)](https://github.com/XRTK/com.xrtk.gltf/actions/workflows/build.yml) |
+| main | [![main](https://github.com/XRTK/com.xrtk.gltf/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/XRTK/com.xrtk.gltf/actions/workflows/build.yml) |
 | development | [![development](https://github.com/XRTK/com.xrtk.gltf/actions/workflows/build.yml/badge.svg?branch=development)](https://github.com/XRTK/com.xrtk.gltf/actions/workflows/build.yml) |
-
